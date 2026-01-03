@@ -1,0 +1,51 @@
+# Render.com Blueprint
+# Deploy with: https://render.com/deploy
+
+services:
+  - type: web
+    name: ds-payment-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEFAULT_PAYMENT_EMAIL
+        sync: false
+      - key: RECIPIENT_NAME
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "true"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: IMAP_ENABLED
+        value: "true"
+      - key: IMAP_HOST
+        sync: false
+      - key: IMAP_PORT
+        value: "993"
+      - key: IMAP_USER
+        sync: false
+      - key: IMAP_PASS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ds-payment-db
+          property: connectionString
+
+databases:
+  - name: ds-payment-db
+    databaseName: ds_payment
+    plan: free
+    region: oregon
