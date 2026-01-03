@@ -189,7 +189,14 @@ async function runMigrations() {
 
 async function query(sql, params = []) {
   if (isProduction) {
-    const result = await pool.query(sql, params);
+    // Convert ? placeholders to $1, $2, etc. for PostgreSQL
+    let pgSql = sql;
+    let paramIndex = 1;
+    while (pgSql.includes('?')) {
+      pgSql = pgSql.replace('?', '$' + paramIndex);
+      paramIndex++;
+    }
+    const result = await pool.query(pgSql, params);
     return result.rows;
   } else {
     return new Promise((resolve, reject) => {
