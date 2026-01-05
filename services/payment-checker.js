@@ -132,7 +132,7 @@ async function matchPaymentToOrder(paymentData) {
   // Priority 1: Match by reference code + amount (100% confidence)
   if (referenceCode) {
     const orderByRef = await db.get(
-      'SELECT * FROM orders WHERE reference_number = ? AND status IN (?, ?)',
+      'SELECT * FROM orders WHERE reference_number = $1 AND status IN ($2, $3)',
       [referenceCode, 'pending', 'awaiting_payment']
     );
     
