@@ -167,9 +167,9 @@ async function matchPaymentToOrder(paymentData) {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const orderByAmountRecent = await db.get(
       `SELECT * FROM orders 
-       WHERE amount_cents = ? 
-         AND status IN (?, ?)
-         AND created_at >= ?
+       WHERE amount_cents = $1
+         AND status IN ($2, $3)
+         AND created_at >= $4
        ORDER BY created_at DESC
        LIMIT 1`,
       [amountCents, 'pending', 'awaiting_payment', thirtyMinutesAgo]
@@ -179,9 +179,9 @@ async function matchPaymentToOrder(paymentData) {
       // Check if there are multiple orders with same amount
       const count = await db.get(
         `SELECT COUNT(*) as count FROM orders 
-         WHERE amount_cents = ? 
-           AND status IN (?, ?)
-           AND created_at >= ?`,
+         WHERE amount_cents = $1 
+           AND status IN ($2, $3)
+           AND created_at >= $4`,
         [amountCents, 'pending', 'awaiting_payment', thirtyMinutesAgo]
       );
 
