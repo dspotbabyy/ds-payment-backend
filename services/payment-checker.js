@@ -149,9 +149,9 @@ async function matchPaymentToOrder(paymentData) {
   if (senderEmail && amountCents) {
     const orderByEmailAmount = await db.get(
       `SELECT * FROM orders 
-       WHERE amount_cents = ? 
-         AND customer_email = ?
-         AND status IN (?, ?)
+       WHERE amount_cents = $1 
+         AND customer_email = $2
+         AND status IN ($3, $4)
        ORDER BY created_at DESC
        LIMIT 1`,
       [amountCents, senderEmail, 'pending', 'awaiting_payment']
@@ -198,8 +198,8 @@ async function matchPaymentToOrder(paymentData) {
   if (amountCents) {
     const orderByAmountOnly = await db.get(
       `SELECT * FROM orders 
-       WHERE amount_cents = ? 
-         AND status IN (?, ?)
+       WHERE amount_cents = $1 
+         AND status IN ($2, $3)
        ORDER BY created_at DESC
        LIMIT 1`,
       [amountCents, 'pending', 'awaiting_payment']
