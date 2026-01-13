@@ -334,8 +334,7 @@ async function checkInbox() {
 
         // Search for unread emails from last 24 hours
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const searchCriteria = ['UNSEEN', ['SINCE', yesterday]];
-
+        const searchCriteria = ['UNSEEN'];
         imap.search(searchCriteria, (err, results) => {
           if (err) {
             imap.end();
