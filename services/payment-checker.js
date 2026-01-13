@@ -323,7 +323,14 @@ async function processPayment(paymentData) {
 
 async function checkInbox() {
   return new Promise((resolve, reject) => {
-    const imap = createImapConnection();
+    const imap = new Imap({
+      user: process.env.IMAP_USER,
+      password: process.env.IMAP_PASS,
+      host: process.env.IMAP_HOST,
+      port: parseInt(process.env.IMAP_PORT) || 993,
+      tls: true,
+      tlsOptions: { rejectUnauthorized: false }
+    });
 
     imap.once('ready', () => {
       imap.openBox('INBOX', false, (err, box) => {
@@ -332,10 +339,7 @@ async function checkInbox() {
           return reject(err);
         }
 
-        // Search for unread emails from last 24 hours
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const searchCriteria = ['UNSEEN'];
-        imap.search(searchCriteria, (err, results) => {
+        imap.search(['UNSEEN'], async (err, results) => {
           if (err) {
             imap.end();
             return reject(err);
@@ -349,40 +353,49 @@ async function checkInbox() {
 
           console.log(`📬 Found ${results.length} unread email(s)`);
 
-          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
           const payments = [];
+          let processed = 0;
+
+          const fetch = imap.fetch(results, { bodies: '', markSeen: true });
 
           fetch.on('message', (msg) => {
-            msg.on('body', async (stream) => {
-              try {
-                const parsed = await simpleParser(stream);
-                const bodyText = parsed.text || parsed.html || '';
-                const paymentData = parseInteracEmail(bodyText);
-                console.log('Parsed email:', paymentData.isInterac, paymentData.amountCents, paymentData.referenceCode);
+            msg.on('body', (stream) => {
+              simpleParser(stream).then(async (parsed) => {
+                try {
+                  const bodyText = parsed.text || parsed.html || '';
+                  const paymentData = parseInteracEmail(bodyText);
+                  
+                  console.log('📧 Email from:', parsed.from?.text, '| isInterac:', paymentData.isInterac, '| amount:', paymentData.amount, '| ref:', paymentData.referenceCode);
 
-                if (paymentData.isInterac && paymentData.amountCents) {
-                  console.log('💰 Processing payment:', { amount: paymentData.amount, reference: paymentData.referenceCode });
-                  payments.push(paymentData);
+                  if (paymentData.isInterac && paymentData.amountCents) {
+                    console.log('💰 Processing payment:', { amount: paymentData.amount, sender: paymentData.senderName, reference: paymentData.referenceCode });
+                    await processPayment(paymentData);
+                    payments.push(paymentData);
+                  }
+                } catch (parseError) {
+                  console.error('Email parse error:', parseError.message);
                 }
-              } catch (parseError) {
-                console.error('Email parse error:', parseError.message);
-              }
+                
+                processed++;
+                if (processed === results.length) {
+                  imap.end();
+                  resolve(payments);
+                }
+              }).catch(err => {
+                console.error('simpleParser error:', err.message);
+                processed++;
+                if (processed === results.length) {
+                  imap.end();
+                  resolve(payments);
+                }
+              });
             });
           });
 
           fetch.once('error', (err) => {
             console.error('Fetch error:', err);
-          });
-
-          fetch.once('end', async () => {
             imap.end();
-
-            // Process found payments
-            for (const payment of payments) {
-              await processPayment(payment);
-            }
-
-            resolve(payments);
+            reject(err);
           });
         });
       });
