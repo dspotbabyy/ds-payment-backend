@@ -358,8 +358,10 @@ async function checkInbox() {
                 const parsed = await simpleParser(stream);
                 const bodyText = parsed.text || parsed.html || '';
                 const paymentData = parseInteracEmail(bodyText);
+                console.log('Parsed email:', paymentData.isInterac, paymentData.amountCents, paymentData.referenceCode);
 
                 if (paymentData.isInterac && paymentData.amountCents) {
+                  console.log('💰 Processing payment:', { amount: paymentData.amount, reference: paymentData.referenceCode });
                   payments.push(paymentData);
                 }
               } catch (parseError) {
