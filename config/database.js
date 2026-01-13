@@ -222,8 +222,13 @@ async function query(sql, params = []) {
 
 async function get(sql, params = []) {
   if (isProduction) {
-    const result = await pool.query(sql, params);
-    return result.rows[0] || null;
+    let pgSql = sql;
+    let idx = 1;
+    while (pgSql.includes('?')) {
+      pgSql = pgSql.replace('?', '$' + idx);
+      idx++;
+    }
+    const result = await pool.query(pgSql, params);    return result.rows[0] || null;
   } else {
     return new Promise((resolve, reject) => {
       db.get(sql, params, (err, row) => {
