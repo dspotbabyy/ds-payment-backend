@@ -31,7 +31,7 @@ async function getNextPaymentEmail() {
     // Get all active aliases ordered by ID
     const aliases = await db.query(`
       SELECT * FROM email_aliases 
-      WHERE active = 1 
+      WHERE active = true 
       ORDER BY id ASC
     `);
 
@@ -121,7 +121,7 @@ async function getRotationStatus() {
   try {
     const state = await db.get("SELECT * FROM rotation_state WHERE id = 1");
     const aliases = await db.query(`
-      SELECT * FROM email_aliases WHERE active = 1 ORDER BY id ASC
+      SELECT * FROM email_aliases WHERE active = true ORDER BY id ASC
     `);
     const totalAliases = await db.query(`SELECT COUNT(*) as count FROM email_aliases`);
 
@@ -162,7 +162,7 @@ async function getRotationStatus() {
 async function forceRotate() {
   try {
     const aliases = await db.query(`
-      SELECT * FROM email_aliases WHERE active = 1 ORDER BY id ASC
+      SELECT * FROM email_aliases WHERE active = true ORDER BY id ASC
     `);
 
     if (aliases.length === 0) {
@@ -198,7 +198,7 @@ async function forceRotate() {
 async function resetRotation() {
   try {
     const firstAlias = await db.get(`
-      SELECT * FROM email_aliases WHERE active = 1 ORDER BY id ASC LIMIT 1
+      SELECT * FROM email_aliases WHERE active = true ORDER BY id ASC LIMIT 1
     `);
 
     await db.query(`
